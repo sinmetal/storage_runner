@@ -31,7 +31,7 @@ func (c *Client) Set(ctx context.Context, key string, value string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("set res: %+v\n", v)
+	fmt.Printf("set res: key:%s:%+v\n", key, v)
 	return nil
 }
 
@@ -43,6 +43,6 @@ func (c *Client) Get(ctx context.Context, key string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("get res: %+v\n", v)
+	fmt.Printf("get res: key:%s:%+v\n", key, v)
 	return nil
 }
