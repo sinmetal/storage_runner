@@ -4,13 +4,13 @@ steps:
     args: ['build', '.']
     env: ['GO111MODULE=on']
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '--tag=gcr.io/$PROJECT_ID/sinmetal/srunner/$BRANCH_NAME:$COMMIT_SHA', '.']
+    args: ['build', '--tag=gcr.io/$PROJECT_ID/sinmetal/storage_runner/$BRANCH_NAME:$COMMIT_SHA', '.']
   - name: 'gcr.io/cloud-builders/kubectl'
     args:
       - set
       - image
       - deployment/storage-runner-dep
-      - srunner-dep=gcr.io/$PROJECT_ID/sinmetal/srunner/$BRANCH_NAME:$COMMIT_SHA
+      - storage-runner-dep=gcr.io/$PROJECT_ID/sinmetal/storage_runner/$BRANCH_NAME:$COMMIT_SHA
     env:
       - 'CLOUDSDK_COMPUTE_ZONE=asia-northeast1-b'
       - 'CLOUDSDK_CONTAINER_CLUSTER=sinmetal-tokyo'
