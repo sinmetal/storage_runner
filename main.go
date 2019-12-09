@@ -37,5 +37,5 @@ func main() {
 	goGetRedis(rc, 3, endCh)
 
 	err = <-endCh
-	fmt.Printf("BOMB %+v", err)
+	fmt.Printf("BOMB %+v\n", err)
 }
