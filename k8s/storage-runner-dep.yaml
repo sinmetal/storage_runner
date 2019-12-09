@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storage-runner-dep
+  labels:
+    app: storage-runner-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: storage-runner-dep
+  template:
+    metadata:
+      labels:
+        app: storage-runner-dep
+    spec:
+      containers:
+        - name: storage-runner-dep
+          image: gcr.io/$PROJECT_ID/sinmetal/storage_runner/master
+          envFrom:
+            - configMapRef:
+                name: storage-runner-config
