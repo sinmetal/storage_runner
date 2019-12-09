@@ -1,4 +1,4 @@
-package redis
+package main
 
 import (
 	"context"
@@ -8,5 +8,5 @@ import (
 )
 
 func startSpan(ctx context.Context, name string) (context.Context, *trace.Span) {
-	return trace.StartSpan(ctx, fmt.Sprintf("/redis/%s", "redis", name))
+	return trace.StartSpan(ctx, fmt.Sprintf("/storage_runner/go/%s", name))
 }

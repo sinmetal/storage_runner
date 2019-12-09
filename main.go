@@ -1,9 +1,7 @@
 package main
 
 import (
-	"context"
-	"math/rand"
-	"time"
+	"fmt"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"github.com/sinmetal/gcpmetadata"
@@ -32,12 +30,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	for {
-		ctx := context.Background()
-		err = rc.Set(ctx)
-		if err != nil {
-			panic(err)
-		}
-		time.Sleep(time.Duration(rand.Intn(10)) * time.Millisecond)
-	}
+
+	endCh := make(chan error, 10)
+
+	goSetRedis(rc, 3, endCh)
+	goGetRedis(rc, 3, endCh)
+
+	err = <-endCh
+	fmt.Printf("BOMB %+v", err)
 }

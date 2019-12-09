@@ -23,14 +23,26 @@ func NewClient() (*Client, error) {
 	return &Client{conn: c}, nil
 }
 
-func (c *Client) Set(ctx context.Context) error {
+func (c *Client) Set(ctx context.Context, key string, value string) error {
 	ctx, span := startSpan(ctx, "set")
 	defer span.End()
 
-	v, err := c.conn.Do("SET", "mykey", "いえーい", "nx")
+	v, err := c.conn.Do("SET", key, value, "nx")
 	if err != nil {
 		return err
 	}
-	fmt.Printf("set res: %+v", v)
+	fmt.Printf("set res: %+v\n", v)
+	return nil
+}
+
+func (c *Client) Get(ctx context.Context, key string) error {
+	ctx, span := startSpan(ctx, "get")
+	defer span.End()
+
+	v, err := c.conn.Do("GET", key)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("get res: %+v\n", v)
 	return nil
 }
