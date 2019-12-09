@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/gomodule/redigo/redis"
@@ -22,11 +23,14 @@ func NewClient() (*Client, error) {
 	return &Client{conn: c}, nil
 }
 
-func (c *Client) Set() error {
+func (c *Client) Set(ctx context.Context) error {
+	ctx, span := startSpan(ctx, "set")
+	defer span.End()
+
 	v, err := c.conn.Do("SET", "mykey", "いえーい", "nx")
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%+v", v)
+	fmt.Printf("set res: %+v", v)
 	return nil
 }
