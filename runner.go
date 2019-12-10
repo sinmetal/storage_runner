@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
 	"github.com/sinmetal/storage_runner/redis"
 )
 
-func goSetRedis(rc *redis.Client, goroutine int, endCh chan<- error) {
+func GoSetRedis(rc *redis.Client, goroutine int, endCh chan<- error) {
 	go func() {
 		for {
 			var wg sync.WaitGroup
@@ -16,6 +17,13 @@ func goSetRedis(rc *redis.Client, goroutine int, endCh chan<- error) {
 				wg.Add(1)
 				go func(i int) {
 					defer wg.Done()
+					conn := rc.GetConn()
+					defer func() {
+						if err := conn.Close(); err != nil {
+							fmt.Printf("failed redis.Conn.Close().err=%+v\n", err)
+						}
+					}()
+
 					ctx := context.Background()
 
 					id := NewNarrowRandom()
@@ -29,7 +37,7 @@ func goSetRedis(rc *redis.Client, goroutine int, endCh chan<- error) {
 						defer cancel()
 					}
 
-					if err := rc.Set(ctx, id, id); err != nil {
+					if err := redis.Set(ctx, conn, id, id); err != nil {
 						endCh <- err
 					}
 				}(i)
@@ -39,7 +47,7 @@ func goSetRedis(rc *redis.Client, goroutine int, endCh chan<- error) {
 	}()
 }
 
-func goGetRedis(rc *redis.Client, goroutine int, endCh chan<- error) {
+func GoGetRedis(rc *redis.Client, goroutine int, endCh chan<- error) {
 	go func() {
 		for {
 			var wg sync.WaitGroup
@@ -47,6 +55,13 @@ func goGetRedis(rc *redis.Client, goroutine int, endCh chan<- error) {
 				wg.Add(1)
 				go func(i int) {
 					defer wg.Done()
+					conn := rc.GetConn()
+					defer func() {
+						if err := conn.Close(); err != nil {
+							fmt.Printf("failed redis.Conn.Close().err=%+v\n", err)
+						}
+					}()
+
 					ctx := context.Background()
 					id := NewNarrowRandom()
 
@@ -59,7 +74,7 @@ func goGetRedis(rc *redis.Client, goroutine int, endCh chan<- error) {
 						defer cancel()
 					}
 
-					if err := rc.Get(ctx, id); err != nil {
+					if err := redis.Get(ctx, conn, id); err != nil {
 						endCh <- err
 					}
 				}(i)

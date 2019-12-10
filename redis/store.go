@@ -3,31 +3,39 @@ package redis
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/gomodule/redigo/redis"
 )
 
 type Client struct {
-	conn redis.Conn
+	pool *redis.Pool
 }
 
 func (c *Client) Close() error {
-	return c.conn.Close()
+	return c.pool.Close()
 }
 
-func NewClient() (*Client, error) {
-	c, err := redis.Dial("tcp", "10.146.99.131:6379")
-	if err != nil {
-		return nil, err
+func (c *Client) GetConn() redis.Conn {
+	return c.pool.Get()
+}
+
+func NewClient(address string) (*Client, error) {
+	pool := &redis.Pool{
+		MaxIdle:     10,
+		IdleTimeout: 240 * time.Second,
+		Dial: func() (redis.Conn, error) {
+			return redis.Dial("tcp", address)
+		},
 	}
-	return &Client{conn: c}, nil
+	return &Client{pool: pool}, nil
 }
 
-func (c *Client) Set(ctx context.Context, key string, value string) error {
+func Set(ctx context.Context, conn redis.Conn, key string, value string) error {
 	ctx, span := startSpan(ctx, "set")
 	defer span.End()
 
-	v, err := c.conn.Do("SET", key, value, "nx")
+	v, err := conn.Do("SET", key, value)
 	if err != nil {
 		return err
 	}
@@ -35,11 +43,11 @@ func (c *Client) Set(ctx context.Context, key string, value string) error {
 	return nil
 }
 
-func (c *Client) Get(ctx context.Context, key string) error {
+func Get(ctx context.Context, conn redis.Conn, key string) error {
 	ctx, span := startSpan(ctx, "get")
 	defer span.End()
 
-	v, err := c.conn.Do("GET", key)
+	v, err := conn.Do("GET", key)
 	if err != nil {
 		return err
 	}
