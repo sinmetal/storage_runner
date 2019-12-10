@@ -48,9 +48,15 @@ func Get(ctx context.Context, conn redis.Conn, key string) error {
 	defer span.End()
 
 	v, err := conn.Do("GET", key)
+	s, err := redis.String(v, err)
 	if err != nil {
-		return err
+		if err == redis.ErrNil {
+			// noop
+		} else {
+			return err
+		}
 	}
-	fmt.Printf("get res: key:%s:%+v\n", key, v)
+
+	fmt.Printf("get res: key:%s:%+v\n", key, s)
 	return nil
 }
