@@ -74,7 +74,8 @@ func GoGetRedis(rc *redis.Client, goroutine int, endCh chan<- error) {
 						defer cancel()
 					}
 
-					if err := redis.Get(ctx, conn, id); err != nil {
+					_, err := redis.Get(ctx, conn, id)
+					if err != nil {
 						endCh <- err
 					}
 				}(i)

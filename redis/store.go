@@ -2,7 +2,6 @@ package redis
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
@@ -35,15 +34,14 @@ func Set(ctx context.Context, conn redis.Conn, key string, value string) error {
 	ctx, span := startSpan(ctx, "set")
 	defer span.End()
 
-	v, err := conn.Do("SET", key, value)
+	_, err := conn.Do("SET", key, value)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("set res: key:%s:%+v\n", key, v)
 	return nil
 }
 
-func Get(ctx context.Context, conn redis.Conn, key string) error {
+func Get(ctx context.Context, conn redis.Conn, key string) (string, error) {
 	ctx, span := startSpan(ctx, "get")
 	defer span.End()
 
@@ -53,10 +51,9 @@ func Get(ctx context.Context, conn redis.Conn, key string) error {
 		if err == redis.ErrNil {
 			// noop
 		} else {
-			return err
+			return "", err
 		}
 	}
 
-	fmt.Printf("get res: key:%s:%+v\n", key, s)
-	return nil
+	return s, nil
 }

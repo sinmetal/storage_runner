@@ -3,4 +3,4 @@ kind: ConfigMap
 metadata:
   name: storage-runner-config
 data:
-  STORAGE_REDIS_ADDRESS: "10.146.99.131:6379"
+  STORAGE_REDISADDRESS: "10.146.99.131:6379"
