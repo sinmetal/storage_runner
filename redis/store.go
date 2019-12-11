@@ -33,11 +33,20 @@ func NewClient(address string) (*Client, error) {
 func Set(ctx context.Context, conn redis.Conn, key string, value string) error {
 	ctx, span := startSpan(ctx, "set")
 	defer span.End()
-
-	_, err := conn.Do("SET", key, value)
+	if err := conn.Send("MULTI"); err != nil {
+		return err
+	}
+	if err := conn.Send("SET", key, value); err != nil {
+		return err
+	}
+	if err := conn.Send("EXPIRE", key, 60); err != nil {
+		return err
+	}
+	_, err := redis.Values(conn.Do("EXEC"))
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
