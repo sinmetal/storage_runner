@@ -7,6 +7,7 @@ import (
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/sinmetal/gcpmetadata"
+	"github.com/sinmetal/storage_runner/metrics"
 	sr "github.com/sinmetal/storage_runner/redis"
 	"go.opencensus.io/trace"
 )
@@ -36,6 +37,11 @@ func main() {
 		}
 		trace.RegisterExporter(exporter)
 		// trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
+
+		{
+			exporter := metrics.InitExporter()
+			metrics.InitOpenCensusStats(exporter)
+		}
 	}
 
 	rc, err := sr.NewClient(env.RedisAddress)

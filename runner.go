@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/sinmetal/storage_runner/metrics"
 	"sync"
 	"time"
 
@@ -38,6 +39,9 @@ func GoSetRedis(rc *redis.Client, goroutine int, endCh chan<- error) {
 					}
 
 					if err := redis.Set(ctx, conn, id, id); err != nil {
+						endCh <- err
+					}
+					if err := metrics.CountStatus(ctx, "SET OK"); err != nil {
 						endCh <- err
 					}
 				}(i)
@@ -76,6 +80,10 @@ func GoGetRedis(rc *redis.Client, goroutine int, endCh chan<- error) {
 
 					_, err := redis.Get(ctx, conn, id)
 					if err != nil {
+						endCh <- err
+					}
+
+					if err := metrics.CountStatus(ctx, "GET OK"); err != nil {
 						endCh <- err
 					}
 				}(i)
