@@ -22,3 +22,7 @@ func TestGoSetRedis(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestDeadline(t *testing.T) {
+
+}

@@ -7,8 +7,8 @@ import (
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/sinmetal/gcpmetadata"
-	"github.com/sinmetal/storage_runner/metrics"
 	sr "github.com/sinmetal/storage_runner/redis"
+	"github.com/sinmetal/storage_runner/stats"
 	"go.opencensus.io/trace"
 )
 
@@ -39,8 +39,8 @@ func main() {
 		// trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
 
 		{
-			exporter := metrics.InitExporter()
-			metrics.InitOpenCensusStats(exporter)
+			exporter := stats.InitExporter(project)
+			stats.InitOpenCensusStats(exporter)
 		}
 	}
 

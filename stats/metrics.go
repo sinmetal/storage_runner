@@ -1,10 +1,9 @@
-package metrics
+package stats
 
 import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
@@ -40,13 +39,13 @@ func GetMetricType(v *view.View) string {
 	return fmt.Sprintf("custom.googleapis.com/%s", v.Name)
 }
 
-func InitExporter() *stackdriver.Exporter {
+func InitExporter(project string) *stackdriver.Exporter {
 	location := "asia-northeast1-b" // TODO 適当に入れてる
 
 	mr := NewGenericNodeMonitoredResource(location, "default", "public-data")
 	labels := &stackdriver.Labels{}
 	exporter, err := stackdriver.NewExporter(stackdriver.Options{
-		ProjectID:               os.Getenv("GOOGLE_CLOUD_PROJECT"),
+		ProjectID:               project,
 		Location:                location,
 		MonitoredResource:       mr,
 		DefaultMonitoringLabels: labels,
@@ -66,8 +65,8 @@ const (
 	OCReportInterval = 60 * time.Second
 
 	// Measure namess for respecitive OpenCensus Measure
-	LogSize = "logsize"
-	Status  = "status"
+	LogSize     = "logsize"
+	RedisStatus = "redis-status"
 
 	// Units are used to define Measures of OpenCensus.
 	ByteSizeUnit = "byte"
@@ -80,10 +79,10 @@ const (
 var (
 	// Measure variables
 	MLogSize     = stats.Int64(LogSize, "logSize", ByteSizeUnit)
-	MStatusCount = stats.Int64(Status, "status", StatusUnit)
+	MStatusCount = stats.Int64(RedisStatus, "redis status", StatusUnit)
 
-	StatusCountView = &view.View{
-		Name:        Status,
+	RedisStatusCountView = &view.View{
+		Name:        RedisStatus,
 		Description: "status count",
 		TagKeys:     []tag.Key{KeySource},
 		Measure:     MStatusCount,
@@ -103,7 +102,7 @@ var (
 	}
 
 	StatusViews = []*view.View{
-		StatusCountView,
+		RedisStatusCountView,
 	}
 
 	// KeySource is the key for label in "generic_node",
@@ -132,7 +131,7 @@ func RecordMeasurement(id string, logSize int64) error {
 	return nil
 }
 
-func CountStatus(ctx context.Context, id string) error {
+func CountRedisStatus(ctx context.Context, id string) error {
 	ctx, err := tag.New(ctx, tag.Upsert(KeySource, id))
 	if err != nil {
 		log.Fatalf("failed to insert key: %v", err)

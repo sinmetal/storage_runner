@@ -3,7 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/sinmetal/storage_runner/metrics"
+	"github.com/morikuni/failure"
+	"github.com/sinmetal/storage_runner/stats"
 	"sync"
 	"time"
 
@@ -34,14 +35,34 @@ func GoSetRedis(rc *redis.Client, goroutine int, endCh chan<- error) {
 
 					var cancel context.CancelFunc
 					if _, hasDeadline := ctx.Deadline(); !hasDeadline {
-						ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
+						ctx, cancel = context.WithTimeout(ctx, 500*time.Millisecond)
 						defer cancel()
 					}
 
-					if err := redis.Set(ctx, conn, id, id); err != nil {
-						endCh <- err
+					retCh := make(chan error)
+					go func() {
+						ret := redis.Set(ctx, conn, id, id)
+						select {
+						case <-ctx.Done():
+						case retCh <- ret:
+						}
+					}()
+					select {
+					case <-ctx.Done():
+						if err := stats.CountRedisStatus(ctx, "SET TIMEOUT"); err != nil {
+							endCh <- err
+						}
+					case err := <-retCh:
+						serr := stats.CountRedisStatus(ctx, "SET NG")
+						if serr != nil {
+							err = failure.Wrap(err, failure.Messagef("failed stats. err=%+v", serr))
+						}
+						if err != nil {
+							endCh <- err
+						}
 					}
-					if err := metrics.CountStatus(ctx, "SET OK"); err != nil {
+
+					if err := stats.CountRedisStatus(ctx, "SET OK"); err != nil {
 						endCh <- err
 					}
 				}(i)
@@ -74,16 +95,34 @@ func GoGetRedis(rc *redis.Client, goroutine int, endCh chan<- error) {
 
 					var cancel context.CancelFunc
 					if _, hasDeadline := ctx.Deadline(); !hasDeadline {
-						ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
+						ctx, cancel = context.WithTimeout(ctx, 500*time.Millisecond)
 						defer cancel()
 					}
 
-					_, err := redis.Get(ctx, conn, id)
-					if err != nil {
-						endCh <- err
+					retCh := make(chan error)
+					go func() {
+						_, ret := redis.Get(ctx, conn, id)
+						select {
+						case <-ctx.Done():
+						case retCh <- ret:
+						}
+					}()
+					select {
+					case <-ctx.Done():
+						if err := stats.CountRedisStatus(ctx, "GET TIMEOUT"); err != nil {
+							endCh <- err
+						}
+					case err := <-retCh:
+						serr := stats.CountRedisStatus(ctx, "GET NG")
+						if serr != nil {
+							err = failure.Wrap(err, failure.Messagef("failed stats. err=%+v", serr))
+						}
+						if err != nil {
+							endCh <- err
+						}
 					}
 
-					if err := metrics.CountStatus(ctx, "GET OK"); err != nil {
+					if err := stats.CountRedisStatus(ctx, "GET OK"); err != nil {
 						endCh <- err
 					}
 				}(i)
