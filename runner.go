@@ -3,12 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/morikuni/failure"
-	"github.com/sinmetal/storage_runner/stats"
 	"sync"
 	"time"
 
+	"github.com/morikuni/failure"
 	"github.com/sinmetal/storage_runner/redis"
+	"github.com/sinmetal/storage_runner/stats"
 )
 
 func GoSetRedis(rc *redis.Client, goroutine int, endCh chan<- error) {
@@ -39,13 +39,9 @@ func GoSetRedis(rc *redis.Client, goroutine int, endCh chan<- error) {
 						defer cancel()
 					}
 
-					retCh := make(chan error)
+					retCh := make(chan error, 1)
 					go func() {
-						ret := redis.Set(ctx, conn, id, id)
-						select {
-						case <-ctx.Done():
-						case retCh <- ret:
-						}
+						retCh <- redis.Set(ctx, conn, id, id)
 					}()
 					select {
 					case <-ctx.Done():
@@ -53,17 +49,19 @@ func GoSetRedis(rc *redis.Client, goroutine int, endCh chan<- error) {
 							endCh <- err
 						}
 					case err := <-retCh:
-						serr := stats.CountRedisStatus(ctx, "SET NG")
-						if serr != nil {
-							err = failure.Wrap(err, failure.Messagef("failed stats. err=%+v", serr))
-						}
 						if err != nil {
-							endCh <- err
+							serr := stats.CountRedisStatus(ctx, "SET NG")
+							if serr != nil {
+								err = failure.Wrap(err, failure.Messagef("failed stats. err=%+v", serr))
+							}
+							if err != nil {
+								endCh <- err
+							}
+						} else {
+							if err := stats.CountRedisStatus(ctx, "SET OK"); err != nil {
+								endCh <- err
+							}
 						}
-					}
-
-					if err := stats.CountRedisStatus(ctx, "SET OK"); err != nil {
-						endCh <- err
 					}
 				}(i)
 			}
@@ -99,13 +97,10 @@ func GoGetRedis(rc *redis.Client, goroutine int, endCh chan<- error) {
 						defer cancel()
 					}
 
-					retCh := make(chan error)
+					retCh := make(chan error, 1)
 					go func() {
 						_, ret := redis.Get(ctx, conn, id)
-						select {
-						case <-ctx.Done():
-						case retCh <- ret:
-						}
+						retCh <- ret
 					}()
 					select {
 					case <-ctx.Done():
@@ -113,17 +108,19 @@ func GoGetRedis(rc *redis.Client, goroutine int, endCh chan<- error) {
 							endCh <- err
 						}
 					case err := <-retCh:
-						serr := stats.CountRedisStatus(ctx, "GET NG")
-						if serr != nil {
-							err = failure.Wrap(err, failure.Messagef("failed stats. err=%+v", serr))
-						}
 						if err != nil {
-							endCh <- err
+							serr := stats.CountRedisStatus(ctx, "GET NG")
+							if serr != nil {
+								err = failure.Wrap(err, failure.Messagef("failed stats. err=%+v", serr))
+							}
+							if err != nil {
+								endCh <- err
+							}
+						} else {
+							if err := stats.CountRedisStatus(ctx, "GET OK"); err != nil {
+								endCh <- err
+							}
 						}
-					}
-
-					if err := stats.CountRedisStatus(ctx, "GET OK"); err != nil {
-						endCh <- err
 					}
 				}(i)
 			}
